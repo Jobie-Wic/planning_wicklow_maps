@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planning in County Wicklow</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #f5f5f5;
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 2rem;
+      text-align: center;
+    }
+    section {
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+    #map, #wicklowMap, #heatmap {
+      height: 600px;
+      width: 100%;
+      margin-top: 1rem;
+      border: 2px solid #ccc;
+    }
+    .legend {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      z-index: 1000;
+      font-size: 0.9em;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9em;
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Planning Applications in County Wicklow</h1>
+  <p>Exploring development patterns through interactive maps</p>
+</header>
+
+<section>
+  <h2>Introduction</h2>
+  <p>
+    This project investigates the spatial distribution of planning applications submitted in County Wicklow between 2016 and 2025. The aim is to better understand development patterns across the county by visualising planning activity alongside zoning designations using web mapping tools.
+  </p>
+  <p>
+    The data was originally published by the Department of Housing, Local Government and Heritage in the form of a national shapefile containing point data for planning applications across Ireland. However, the shapefile was temporarily unavailable due to ongoing updates at the time of research.
+  </p>
+  <p>
+    Given this limitation, a CSV version of the dataset was used instead. Drawing on prior experience with data cleansing, the CSV was filtered to isolate records relating specifically to County Wicklow. This process involved correcting formatting issues, handling missing or null values, and reprojecting the coordinate fields from Irish Transverse Mercator (ITM) to WGS84 (EPSG:4326) for compatibility with web mapping platforms like Leaflet.
+  </p>
+  <p>
+    The map below displays planning applications as color-coded points based on application status — such as finalised, appealed, or newly submitted — overlaid with zoning boundaries published through GeoServer. Together, these layers enable an interactive exploration of planning activity and land use across the county.
+  </p>
+</section>
+
+<section>
+  <h2>Interactive Map</h2>
+  <div style="position: relative;">
+    <div id="map"></div>
+    <div class="legend">
+      <strong>Application Status</strong><br>
+      <i style="background: #9E9E9E; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Finalised<br>
+      <i style="background: #E53935; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Appealed Financial<br>
+      <i style="background: #FF9800; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Appealed<br>
+      <i style="background: #2196F3; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> New Application<br>
+      <i style="background: #4CAF50; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Decision Made
+    </div>
+  </div>
+</section>
+<section>
+  <h2>What is a Planning Application?</h2>
+  <p>
+    A planning application is a formal request made to a local authority seeking permission to carry out development on a specific site. This could include building a house, modifying an existing structure, or changing the use of a property. In Ireland, all planning applications are governed by the <em>Planning and Development Act 2000</em> and associated regulations.
+  </p>
+  <p>
+    The application process requires the submission of detailed architectural drawings, site layout plans, maps, and supporting documentation that outlines the nature and scope of the proposed development. Applications are assessed by the planning authority to determine their compliance with the local development plan, zoning regulations, environmental considerations, and public submissions.
+  </p>
+  <p>
+    Once a valid application is received, the statutory process typically takes approximately eight weeks. During this time:
+  </p>
+  <ul>
+    <li><strong>Weeks 1–5:</strong> The planning authority reviews the application and allows time for public consultation.</li>
+    <li><strong>Weeks 6–8:</strong> A decision is made, which may grant permission, grant with conditions, or refuse permission entirely.</li>
+  </ul>
+  <p>
+    Decisions can be appealed to <a href="https://www.pleanala.ie" target="_blank">An Bord Pleanála</a>, Ireland's national planning appeals board.
+  </p>
+</section>
+
+<section>
+  <h2>Understanding Planning Permission in Ireland</h2>
+  <p>
+    This short video by the Irish Association of Self Builders (<a href="https://www.iaosb.com" target="_blank">IAOSB</a>) explains the key steps and important considerations when applying for planning permission in Ireland. It is a helpful guide for anyone looking to build, extend, or renovate a property.
+  </p>
+  
+  <div style="text-align: center; margin-top: 20px;">
+    <iframe width="700" height="400" src="https://www.youtube.com/embed/utcBvtxFhkM" 
+    frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
+    </iframe>
+  </div>
+</section>
+
+<section>
+  <div style="max-width: 1000px; margin: auto; padding: 0 1rem;">
+    <h2>Wicklow Town & Rathnew Development Focus</h2>
+    <p>
+      Since the COVID-19 pandemic, a growing trend toward remote and hybrid working has encouraged people to move beyond Dublin’s traditional commuter belt. Wicklow Town and Rathnew, with their proximity to the capital and coastal amenities, have become increasingly attractive for new residents. Combined with the ongoing housing crisis and rising demand for homes nationally, these towns have experienced notable growth in housing and infrastructure development. 
+    </p>
+    <p>
+      This focused map highlights planning applications specifically submitted in Wicklow Town and Rathnew, showing the spatial distribution of development activity from 2016 to 2025.
+    </p>
+  </div>
+
+  <div id="wicklowMap" style="height: 600px; border: 2px solid #ccc; margin-top: 1rem;"></div>
+</section>
+
+<section>
+  <h2>Heat Map of Development Activity (2019–2024)</h2>
+ <p>
+  The density of planning applications and major developments across County Wicklow reflects wider societal changes post-2020. Remote working trends, rising housing demand, and affordability pressures have driven development not just along established corridors, but increasingly into more rural and suburban parts of the county.
+</p>
+<p>
+  This map visualises the spatial concentration of planning activity between 2016 and 2025, including both everyday applications and large-scale developments, offering insight into the evolving patterns of settlement and growth.
+</p>
+<div id="heatmap" style="height: 600px; border: 2px solid #ccc;"></div>
+</section>
+
+<section>
+  <h2>Planning Applications Across Ireland and Wicklow (2016–2024)</h2>
+  <p>
+     The pie chart shows applications across all Irish counties, while the bar chart highlights the impact of data cleaning for County Wicklow specifically. The original dataset included over 13,000 planning applications for County Wicklow between 2016 and 2025. 
+   </p>
+  <p>
+    However, many entries related to minor works, such as extensions, alterations, or small-scale modifications. To focus the analysis on more significant development trends, the data was carefully filtered to exclude these smaller projects. This resulted in a refined dataset of 5,066 major planning applications, providing a clearer picture of substantial housing and infrastructure growth across the county.
+  </p>
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 2rem;">
+   <div style="flex: 1; min-width: 300px; max-width: 600px;">
+      <img src="images/planning_applications_ireland_2016_2024.png" alt="Planning Applications Ireland" style="width: 100%; border: 2px solid #ccc; padding: 10px; background: white;">
+      <p style="text-align: center; margin-top: 10px; font-size: 0.9em;">Planning Applications in Ireland (2016–2024)</p>
+    </div>
+
+    <div style="flex: 1; min-width: 300px; max-width: 600px;">
+      <img src="images/plan_apps_ww.png" alt="Wicklow Planning Applications Before and After Cleaning" style="width: 100%; border: 2px solid #ccc; padding: 10px; background: white;">
+      <p style="text-align: center; margin-top: 10px; font-size: 0.9em;">Wicklow Planning Applications: Before & After Cleaning</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Created from planning application data in County Wicklow, Ireland. April 2025.
+</footer>
+
+<!-- Load Leaflet and Heatmap Plugin -->
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+// === Full County Map ===
+const map = L.map('map').setView([52.97, -6.35], 10);
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+const zoningLayer = L.tileLayer.wms("http://localhost:8080/geoserver/wicklow_land_cover/wms", {
+  layers: 'wicklow_land_cover:zoning_wicklow_reprojected',
+  format: 'image/png',
+  transparent: true
+});
+
+const planAppLayer = L.geoJSON(null, {
+  pointToLayer: function (feature, latlng) {
+    const status = (feature.properties.application_status || "").toUpperCase();
+    let color = "#666";
+    if (status.includes("FINALISED")) color = "#9E9E9E";
+    else if (status.includes("APPEALED FINANCIAL")) color = "#E53935";
+    else if (status.includes("APPEALED")) color = "#FF9800";
+    else if (status.includes("NEW APPLICATION")) color = "#2196F3";
+    else if (status.includes("DECISION MADE")) color = "#4CAF50";
+    return L.circleMarker(latlng, { radius: 5, fillColor: color, color: "#000", weight: 0.8, opacity: 1, fillOpacity: 0.85 });
+  },
+  onEachFeature: function (feature, layer) {
+    layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>${feature.properties.development_address || "No address"}<br><em>${feature.properties.application_status || "Status unknown"}</em>`);
+  }
+});
+
+fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:plan_app_ww_clean&outputFormat=application/json")
+  .then(res => res.json())
+  .then(data => {
+    if (!data.features[0].geometry && data.features[0].properties.geom) {
+      data.features.forEach(f => f.geometry = f.properties.geom);
+    }
+    planAppLayer.addData(data);
+    planAppLayer.addTo(map);
+  });
+
+L.control.layers({ "OpenStreetMap": osm }, { "Zoning Layer": zoningLayer, "Planning Applications": planAppLayer }).addTo(map);
+zoningLayer.addTo(map);
+
+// === Wicklow Town & Rathnew Map ===
+const wicklowMap = L.map('wicklowMap').setView([52.985, -6.05], 14);
+
+L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+  maxZoom: 17,
+  attribution: 'Map data © OpenStreetMap contributors, SRTM | Tiles © OpenTopoMap'
+}).addTo(wicklowMap);
+
+const wicklowLayer = L.geoJSON(null, {
+  pointToLayer: function (feature, latlng) {
+    const status = (feature.properties.application_status || "").toUpperCase();
+    let color = "#666";
+    if (status.includes("FINALISED")) color = "#9E9E9E";
+    else if (status.includes("APPEALED FINANCIAL")) color = "#E53935";
+    else if (status.includes("APPEALED")) color = "#FF9800";
+    else if (status.includes("NEW APPLICATION")) color = "#2196F3";
+    else if (status.includes("DECISION MADE")) color = "#4CAF50";
+    return L.circleMarker(latlng, { radius: 5, fillColor: color, color: "#000", weight: 0.8, opacity: 1, fillOpacity: 0.85 });
+  },
+  onEachFeature: function (feature, layer) {
+    layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>${feature.properties.development_address || "No address"}<br><em>${feature.properties.application_status || "Status unknown"}</em>`);
+  }
+});
+
+fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:plan_app_ww_clean&outputFormat=application/json")
+  .then(res => res.json())
+  .then(data => {
+    if (!data.features[0].geometry && data.features[0].properties.geom) {
+      data.features.forEach(f => f.geometry = f.properties.geom);
+    }
+    const filtered = data.features.filter(f => {
+      const address = (f.properties.development_address || "").toUpperCase();
+      return address.includes("WICKLOW") || address.includes("RATHNEW");
+    });
+    wicklowLayer.addData({ type: "FeatureCollection", features: filtered });
+    wicklowLayer.addTo(wicklowMap);
+  });
+
+// === Heatmap ===
+const heatmap = L.map('heatmap').setView([52.97, -6.35], 10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(heatmap);
+
+const points = [];
+
+fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:plan_app_ww_clean&outputFormat=application/json")
+  .then(res => res.json())
+  .then(planData => {
+    planData.features.forEach(f => {
+      if (f.geometry && f.geometry.coordinates) {
+        points.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+      }
+    });
+
+    fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:large_dev_ww&outputFormat=application/json")
+      .then(res => res.json())
+      .then(devData => {
+        devData.features.forEach(f => {
+          if (f.geometry && f.geometry.coordinates) {
+            points.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+          }
+        });
+
+        L.heatLayer(points, {
+          radius: 20,
+          blur: 15,
+          maxZoom: 17,
+          gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+        }).addTo(heatmap);
+      });
+  });
+
+});
+</script>
+
+</body>
+</html>
