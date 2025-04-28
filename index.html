@@ -4,7 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Planning in County Wicklow</title>
+
+  <!-- Leaflet and MarkerCluster CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+
   <style>
     body {
       margin: 0;
@@ -28,23 +33,25 @@
       margin-top: 1rem;
       border: 2px solid #ccc;
     }
-    .legend {
-      position: absolute;
-      top: 50%;
-      right: 20px;
-      transform: translateY(-50%);
-      background: white;
-      padding: 10px;
-      border: 1px solid #ccc;
-      z-index: 1000;
-      font-size: 0.9em;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    }
     footer {
       text-align: center;
       padding: 1rem;
       font-size: 0.9em;
       color: #666;
+    }
+    .info.legend {
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      font-size: 0.9em;
+      line-height: 1.2em;
+    }
+    .info.legend i {
+      width: 12px;
+      height: 12px;
+      float: left;
+      margin-right: 6px;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -76,16 +83,9 @@
   <h2>Interactive Map</h2>
   <div style="position: relative;">
     <div id="map"></div>
-    <div class="legend">
-      <strong>Application Status</strong><br>
-      <i style="background: #9E9E9E; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Finalised<br>
-      <i style="background: #E53935; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Appealed Financial<br>
-      <i style="background: #FF9800; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Appealed<br>
-      <i style="background: #2196F3; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> New Application<br>
-      <i style="background: #4CAF50; width: 12px; height: 12px; display: inline-block; margin-right: 6px;"></i> Decision Made
-    </div>
-  </div>
+  </div> <!-- Proper closing -->
 </section>
+
 <section>
   <h2>What is a Planning Application?</h2>
   <p>
@@ -121,17 +121,17 @@
 
 <section>
   <div style="max-width: 1000px; margin: auto; padding: 0 1rem;">
-    <h2>Wicklow Town & Rathnew Development Focus</h2>
+    <h2>Greystones & Delgany Development Focus</h2>
     <p>
-      Since the COVID-19 pandemic, a growing trend toward remote and hybrid working has encouraged people to move beyond Dublin’s traditional commuter belt. Wicklow Town and Rathnew, with their proximity to the capital and coastal amenities, have become increasingly attractive for new residents. Combined with the ongoing housing crisis and rising demand for homes nationally, these towns have experienced notable growth in housing and infrastructure development. 
+      Since the COVID-19 pandemic, a growing trend toward remote and hybrid working has encouraged people to move beyond Dublin’s traditional commuter belt. Greystones & Delgany with their proximity to the capital and coastal amenities, have become increasingly attractive for new residents. Combined with the ongoing housing crisis and rising demand for homes nationally, these towns have experienced notable growth in housing and infrastructure development. 
     </p>
     <p>
-      This focused map highlights planning applications specifically submitted in Wicklow Town and Rathnew, showing the spatial distribution of development activity from 2016 to 2025.
+      This focused map highlights planning applications specifically submitted in Greystones & Delgany, showing the spatial distribution of development activity from 2016 to 2025.
     </p>
   </div>
-
+ <div style="position: relative;">
   <div id="wicklowMap" style="height: 600px; border: 2px solid #ccc; margin-top: 1rem;"></div>
-</section>
+</div>
 
 <section>
   <h2>Heat Map of Development Activity (2019–2024)</h2>
@@ -141,7 +141,9 @@
 <p>
   This map visualises the spatial concentration of planning activity between 2016 and 2025, including both everyday applications and large-scale developments, offering insight into the evolving patterns of settlement and growth.
 </p>
-<div id="heatmap" style="height: 600px; border: 2px solid #ccc;"></div>
+ <div style="position: relative;">
+<div id="heatmap" style="height: 600px; border: 2px solid #ccc; margin-top: 1rem;"></div>
+</div>
 </section>
 
 <section>
@@ -169,27 +171,28 @@
   Created from planning application data in County Wicklow, Ireland. April 2025.
 </footer>
 
-<!-- Load Leaflet and Heatmap Plugin -->
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() { 
 
-  // === Map 1: Full County Map ===
+  // === Full County Map ===
   const map = L.map('map').setView([52.97, -6.35], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
   const zoningLayer = L.geoJSON(null, {
     style: function(feature) {
       const zone = (feature.properties.zone_type || '').toLowerCase();
-      if (zone.includes('residential')) return { color: '#FF0000', fillOpacity: 0.3 };
-      if (zone.includes('agricultural')) return { color: '#00FF00', fillOpacity: 0.3 };
-      if (zone.includes('industrial')) return { color: '#0000FF', fillOpacity: 0.3 };
-      return { color: '#666666', fillOpacity: 0.2 }; // Default
+      if (zone.includes('residential')) return { color: '#FF0000', fillOpacity: 0.4 };
+      if (zone.includes('agricultural')) return { color: '#00FF00', fillOpacity: 0.4 };
+      if (zone.includes('industrial')) return { color: '#0000FF', fillOpacity: 0.4 };
+      return { color: '#666666', fillOpacity: 0.2 };
     }
   }).addTo(map);
 
+  const planAppCluster = L.markerClusterGroup();
   const planAppLayer = L.geoJSON(null, {
     pointToLayer: function (feature, latlng) {
       const status = (feature.properties.application_status || "").toUpperCase();
@@ -214,9 +217,11 @@ document.addEventListener('DOMContentLoaded', function() {
                        ${feature.properties.development_address || "No address"}<br>
                        <em>${feature.properties.application_status || "Status unknown"}</em>`);
     }
-  }).addTo(map);
+  });
+  planAppCluster.addLayer(planAppLayer);
+  map.addLayer(planAppCluster);
 
-  // === Map 2: Greystones/Delgany Focus Map ===
+  // === Focus Map (Greystones/Delgany) ===
   const focusMap = L.map('wicklowMap').setView([53.14, -6.07], 14);
   L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(focusMap);
 
@@ -238,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }).addTo(focusMap);
 
-  // === Map 3: County Heatmap ===
+  // === Heatmap ===
   const heatmap = L.map('heatmap').setView([52.97, -6.35], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(heatmap);
   const heatPoints = [];
@@ -250,56 +255,69 @@ document.addEventListener('DOMContentLoaded', function() {
     .catch(err => console.error('Error loading zoning layer:', err));
 
   fetch('data/plan_app_ww_clean.json')
-  .then(res => res.json())
-  .then(planData => {
-    // Add ALL planning points to the full county map
-    planAppLayer.addData(planData);
+    .then(res => res.json())
+    .then(planData => {
+      planAppLayer.addData(planData);
 
-    // Filter points for the Greystones/Delgany focus map
-    const filtered = planData.features.filter(f => {
-      const address = (f.properties.development_address || "").toUpperCase();
-      return address.includes("GREYSTONES") || address.includes("DELGANY");
-    });
-    focusLayer.addData({ type: "FeatureCollection", features: filtered });
+      const filtered = planData.features.filter(f => {
+        const address = (f.properties.development_address || "").toUpperCase();
+        return address.includes("GREYSTONES") || address.includes("DELGANY");
+      });
+      focusLayer.addData({ type: "FeatureCollection", features: filtered });
 
-    // Add all plan app points to heatPoints
-    planData.features.forEach(f => {
-      if (f.geometry && f.geometry.coordinates) {
-        heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
-      }
-    });
-
-    // Now fetch large developments
-    return fetch('data/large_dev_ww.json');
-  })
-  .then(res => res.json())
-  .then(devData => {
-    devData.features.forEach(f => {
-      if (f.geometry && f.geometry.coordinates) {
-        heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
-        
-        // Optionally: add large devs that are close to Greystones/Delgany manually
-        const lat = f.geometry.coordinates[1];
-        const lon = f.geometry.coordinates[0];
-        if (lat > 53.10 && lat < 53.18 && lon > -6.12 && lon < -6.02) {
-          focusLayer.addData(f);
+      planData.features.forEach(f => {
+        if (f.geometry && f.geometry.coordinates) {
+          heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
         }
-      }
-    });
+      });
 
-    // Now finally add the Heatmap
-    L.heatLayer(heatPoints, {
-      radius: 20,
-      blur: 15,
-      maxZoom: 17,
-      gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
-    }).addTo(heatmap);
-  })
-  .catch(err => console.error('Error loading development data:', err));
+      return fetch('data/large_dev_ww.json');
+    })
+    .then(res => res.json())
+    .then(devData => {
+      devData.features.forEach(f => {
+        if (f.geometry && f.geometry.coordinates) {
+          heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+          
+          // Add large devs to focus map if close to Greystones/Delgany
+          const lat = f.geometry.coordinates[1];
+          const lon = f.geometry.coordinates[0];
+          if (lat > 53.10 && lat < 53.18 && lon > -6.12 && lon < -6.02) {
+            focusLayer.addData(f);
+          }
+        }
+      });
+
+      L.heatLayer(heatPoints, {
+        radius: 20,
+        blur: 15,
+        maxZoom: 17,
+        gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+      }).addTo(heatmap);
+    })
+    .catch(err => console.error('Error loading planning data:', err));
+
+  // === Dynamic Legend ===
+  const legend = L.control({ position: "bottomright" });
+  legend.onAdd = function(map) {
+    const div = L.DomUtil.create("div", "info legend");
+    div.innerHTML += "<strong>Application Status</strong><br>";
+    div.innerHTML += '<i style="background: #9E9E9E"></i> Finalised<br>';
+    div.innerHTML += '<i style="background: #E53935"></i> Appealed Financial<br>';
+    div.innerHTML += '<i style="background: #FF9800"></i> Appealed<br>';
+    div.innerHTML += '<i style="background: #2196F3"></i> New Application<br>';
+    div.innerHTML += '<i style="background: #4CAF50"></i> Decision Made<br>';
+    div.innerHTML += "<hr><strong>Zoning</strong><br>";
+    div.innerHTML += '<i style="background: #FF0000"></i> Residential<br>';
+    div.innerHTML += '<i style="background: #00FF00"></i> Agricultural<br>';
+    div.innerHTML += '<i style="background: #0000FF"></i> Industrial<br>';
+    div.innerHTML += '<i style="background: #666666"></i> Other/Unknown<br>';
+    return div;
+  };
+  legend.addTo(map);
 
 });
 </script>
-
 
 </body>
 </html>
