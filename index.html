@@ -250,61 +250,52 @@ document.addEventListener('DOMContentLoaded', function() {
     .catch(err => console.error('Error loading zoning layer:', err));
 
   fetch('data/plan_app_ww_clean.json')
-    .then(res => res.json())
-    .then(planData => {
-      planAppLayer.addData(planData);
+  .then(res => res.json())
+  .then(planData => {
+    // Add ALL planning points to the full county map
+    planAppLayer.addData(planData);
 
-      const filtered = planData.features.filter(f => {
-        const address = (f.properties.development_address || "").toUpperCase();
-        return address.includes("GREYSTONES") || address.includes("DELGANY");
-      });
-      focusLayer.addData({ type: "FeatureCollection", features: filtered });
+    // Filter points for the Greystones/Delgany focus map
+    const filtered = planData.features.filter(f => {
+      const address = (f.properties.development_address || "").toUpperCase();
+      return address.includes("GREYSTONES") || address.includes("DELGANY");
+    });
+    focusLayer.addData({ type: "FeatureCollection", features: filtered });
 
-      planData.features.forEach(f => {
-        if (f.geometry && f.geometry.coordinates) {
-          heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+    // Add all plan app points to heatPoints
+    planData.features.forEach(f => {
+      if (f.geometry && f.geometry.coordinates) {
+        heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+      }
+    });
+
+    // Now fetch large developments
+    return fetch('data/large_dev_ww.json');
+  })
+  .then(res => res.json())
+  .then(devData => {
+    devData.features.forEach(f => {
+      if (f.geometry && f.geometry.coordinates) {
+        heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+        
+        // Optionally: add large devs that are close to Greystones/Delgany manually
+        const lat = f.geometry.coordinates[1];
+        const lon = f.geometry.coordinates[0];
+        if (lat > 53.10 && lat < 53.18 && lon > -6.12 && lon < -6.02) {
+          focusLayer.addData(f);
         }
-      });
+      }
+    });
 
-      return fetch('data/large_dev_ww.json');
-    })
-    .then(res => res.json())
-    .then(devData => {
-      devData.features.forEach(f => {
-        if (f.geometry && f.geometry.coordinates) {
-          heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
-          focusLayer.addData(f); // Also add large devs into focus map
-        }
-      });
-
-      // Add Heat Layer
-      L.heatLayer(heatPoints, {
-        radius: 20,
-        blur: 15,
-        maxZoom: 17,
-        gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
-      }).addTo(heatmap);
-    })
-    .catch(err => console.error('Error loading development data:', err));
-
-  // === Add Full Legend ===
-  const legend = L.control({ position: "bottomright" });
-  legend.onAdd = function(map) {
-    const div = L.DomUtil.create("div", "info legend");
-    div.innerHTML += "<strong>Application Status</strong><br>";
-    div.innerHTML += '<i style="background: #9E9E9E"></i> Finalised<br>';
-    div.innerHTML += '<i style="background: #E53935"></i> Appealed Financial<br>';
-    div.innerHTML += '<i style="background: #FF9800"></i> Appealed<br>';
-    div.innerHTML += '<i style="background: #2196F3"></i> New Application<br>';
-    div.innerHTML += '<i style="background: #4CAF50"></i> Decision Made<br>';
-    div.innerHTML += "<hr><strong>Zoning</strong><br>";
-    div.innerHTML += '<i style="background: #FF0000"></i> Residential<br>';
-    div.innerHTML += '<i style="background: #00FF00"></i> Agricultural<br>';
-    div.innerHTML += '<i style="background: #0000FF"></i> Industrial<br>';
-    div.innerHTML += '<i style="background: #666666"></i> Other/Unknown<br>';
-    return div;
-  };
-  legend.addTo(map);
+    // Now finally add the Heatmap
+    L.heatLayer(heatPoints, {
+      radius: 20,
+      blur: 15,
+      maxZoom: 17,
+      gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
+    }).addTo(heatmap);
+  })
+  .catch(err => console.error('Error loading development data:', err));
 
 });
 </script>
