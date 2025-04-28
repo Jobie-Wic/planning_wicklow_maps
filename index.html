@@ -194,34 +194,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  const planAppCluster = L.markerClusterGroup();
-  const planAppLayer = L.geoJSON(null, {
-    pointToLayer: function (feature, latlng) {
-      const status = (feature.properties.application_status || "").toUpperCase();
-      let color = "#666666";
-      if (status.includes("FINALISED")) color = "#9E9E9E";
-      else if (status.includes("APPEALED FINANCIAL")) color = "#E53935";
-      else if (status.includes("APPEALED")) color = "#FF9800";
-      else if (status.includes("NEW APPLICATION")) color = "#2196F3";
-      else if (status.includes("DECISION MADE")) color = "#4CAF50";
+ // === Create your planning applications cluster group ===
+const planAppCluster = L.markerClusterGroup({
+  maxClusterRadius: 40, // make clusters smaller (default is 80)
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+  zoomToBoundsOnClick: true
+});
 
-      return L.circleMarker(latlng, {
-        radius: 5,
-        fillColor: color,
-        color: "#000",
-        weight: 0.8,
-        opacity: 1,
-        fillOpacity: 0.85
-      });
-    },
-    onEachFeature: function (feature, layer) {
-      layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>
-                       ${feature.properties.development_address || "No address"}<br>
-                       <em>${feature.properties.application_status || "Status unknown"}</em>`);
-    }
-  });
-  planAppCluster.addLayer(planAppLayer);
-  map.addLayer(planAppCluster);
+const planAppLayer = L.geoJSON(null, {
+  pointToLayer: function (feature, latlng) {
+    const status = (feature.properties.application_status || "").toUpperCase();
+    let color = "#666666";
+    if (status.includes("FINALISED")) color = "#9E9E9E";
+    else if (status.includes("APPEALED FINANCIAL")) color = "#E53935";
+    else if (status.includes("APPEALED")) color = "#FF9800";
+    else if (status.includes("NEW APPLICATION")) color = "#2196F3";
+    else if (status.includes("DECISION MADE")) color = "#4CAF50";
+
+    return L.circleMarker(latlng, {
+      radius: 5,
+      fillColor: color,
+      color: "#000",
+      weight: 0.8,
+      opacity: 1,
+      fillOpacity: 0.85
+    });
+  },
+  onEachFeature: function (feature, layer) {
+    layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>
+                     ${feature.properties.development_address || "No address"}<br>
+                     <em>${feature.properties.application_status || "Status unknown"}</em>`);
+  }
+});
+
+// Add the layer to the cluster
+planAppCluster.addLayer(planAppLayer);
+map.addLayer(planAppCluster);
+
+// === After loading all planning data, zoom to show everything ===
+fetch('data/plan_app_ww_clean.json')
+  .then(res => res.json())
+  .then(planData => {
+    planAppLayer.addData(planData);
+
+    // Automatically zoom the map to fit all planning applications
+    map.fitBounds(planAppCluster.getBounds());
+
+    // [The rest of your focus map and heatmap code follows here]
+  })
+  .catch(err => console.error('Error loading planning apps:', err));
+
 
   // === Focus Map ===
   const focusMap = L.map('wicklowMap').setView([53.14, -6.07], 14);
