@@ -189,7 +189,7 @@ const zoningLayer = L.geoJSON(null, {
   }
 });
 
-fetch("zoning_wicklow_reprojected.json")
+fetch("data/zoning_wicklow_reprojected.json")
   .then(res => res.json())
   .then(data => {
     zoningLayer.addData(data);
@@ -223,7 +223,7 @@ const planAppLayer = L.geoJSON(null, {
   }
 });
 
-fetch("plan_app_ww_clean.json")
+fetch("data/plan_app_ww_clean.json")
   .then(res => res.json())
   .then(data => {
     planAppLayer.addData(data);
@@ -235,7 +235,7 @@ L.control.layers({ "OpenStreetMap": osm }, { "Zoning Layer": zoningLayer, "Plann
 
 });
 
-fetch("plan_app_ww_clean.json")
+fetch("data/plan_app_ww_clean.json")
   .then(res => res.json())
   .then(data => {
     if (!data.features[0].geometry && data.features[0].properties.geom) {
@@ -282,7 +282,7 @@ const wicklowLayer = L.geoJSON(null, {
   }
 });
 
-fetch("plan_app_ww_clean.json")
+fetch("data/plan_app_ww_clean.json")
   .then(res => res.json())
   .then(data => {
     const filtered = data.features.filter(f => {
@@ -302,7 +302,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const points = [];
 
-fetch("plan_app_ww_clean.json")
+fetch("data/plan_app_ww_clean.json")
   .then(res => res.json())
   .then(planData => {
     planData.features.forEach(f => {
@@ -311,7 +311,7 @@ fetch("plan_app_ww_clean.json")
       }
     });
 
-    fetch("large_dev_ww.json")
+    fetch("data/large_dev_ww.json")
       .then(res => res.json())
       .then(devData => {
         devData.features.forEach(f => {
