@@ -178,13 +178,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // === Full County Map ===
 const map = L.map('map').setView([52.97, -6.35], 10);
+
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-const zoningLayer = L.tileLayer.wms("http://localhost:8080/geoserver/wicklow_land_cover/wms", {
-  layers: 'wicklow_land_cover:zoning_wicklow_reprojected',
-  format: 'image/png',
-  transparent: true
+const zoningLayer = L.geoJSON(null, {
+  style: {
+    color: "#6666ff",
+    weight: 1,
+    fillOpacity: 0.2
+  }
 });
+
+fetch("zoning_wicklow_reprojected.geojson")
+  .then(res => res.json())
+  .then(data => {
+    zoningLayer.addData(data);
+    zoningLayer.addTo(map);
+  });
+
 
 const planAppLayer = L.geoJSON(null, {
   pointToLayer: function (feature, latlng) {
@@ -195,14 +206,36 @@ const planAppLayer = L.geoJSON(null, {
     else if (status.includes("APPEALED")) color = "#FF9800";
     else if (status.includes("NEW APPLICATION")) color = "#2196F3";
     else if (status.includes("DECISION MADE")) color = "#4CAF50";
-    return L.circleMarker(latlng, { radius: 5, fillColor: color, color: "#000", weight: 0.8, opacity: 1, fillOpacity: 0.85 });
+
+    return L.circleMarker(latlng, {
+      radius: 5,
+      fillColor: color,
+      color: "#000",
+      weight: 0.8,
+      opacity: 1,
+      fillOpacity: 0.85
+    });
   },
   onEachFeature: function (feature, layer) {
-    layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>${feature.properties.development_address || "No address"}<br><em>${feature.properties.application_status || "Status unknown"}</em>`);
+    layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>
+                     ${feature.properties.development_address || "No address"}<br>
+                     <em>${feature.properties.application_status || "Status unknown"}</em>`);
   }
 });
 
-fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:plan_app_ww_clean&outputFormat=application/json")
+fetch("plan_app_ww_clean.geojson")
+  .then(res => res.json())
+  .then(data => {
+    planAppLayer.addData(data);
+    planAppLayer.addTo(map);
+  });
+
+
+L.control.layers({ "OpenStreetMap": osm }, { "Zoning Layer": zoningLayer, "Planning Applications": planAppLayer }).addTo(map);
+
+});
+
+fetch("plan_app_ww_clean.geojson")
   .then(res => res.json())
   .then(data => {
     if (!data.features[0].geometry && data.features[0].properties.geom) {
@@ -215,7 +248,7 @@ fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=Get
 L.control.layers({ "OpenStreetMap": osm }, { "Zoning Layer": zoningLayer, "Planning Applications": planAppLayer }).addTo(map);
 zoningLayer.addTo(map);
 
-// === Wicklow Town & Rathnew Map ===
+// === Wicklow Town & Rathnew Focused Map ===
 const wicklowMap = L.map('wicklowMap').setView([52.985, -6.05], 14);
 
 L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
@@ -232,19 +265,26 @@ const wicklowLayer = L.geoJSON(null, {
     else if (status.includes("APPEALED")) color = "#FF9800";
     else if (status.includes("NEW APPLICATION")) color = "#2196F3";
     else if (status.includes("DECISION MADE")) color = "#4CAF50";
-    return L.circleMarker(latlng, { radius: 5, fillColor: color, color: "#000", weight: 0.8, opacity: 1, fillOpacity: 0.85 });
+
+    return L.circleMarker(latlng, {
+      radius: 5,
+      fillColor: color,
+      color: "#000",
+      weight: 0.8,
+      opacity: 1,
+      fillOpacity: 0.85
+    });
   },
   onEachFeature: function (feature, layer) {
-    layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>${feature.properties.development_address || "No address"}<br><em>${feature.properties.application_status || "Status unknown"}</em>`);
+    layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>
+                     ${feature.properties.development_address || "No address"}<br>
+                     <em>${feature.properties.application_status || "Status unknown"}</em>`);
   }
 });
 
-fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:plan_app_ww_clean&outputFormat=application/json")
+fetch("plan_app_ww_clean.geojson")
   .then(res => res.json())
   .then(data => {
-    if (!data.features[0].geometry && data.features[0].properties.geom) {
-      data.features.forEach(f => f.geometry = f.properties.geom);
-    }
     const filtered = data.features.filter(f => {
       const address = (f.properties.development_address || "").toUpperCase();
       return address.includes("WICKLOW") || address.includes("RATHNEW");
@@ -255,11 +295,15 @@ fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=Get
 
 // === Heatmap ===
 const heatmap = L.map('heatmap').setView([52.97, -6.35], 10);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(heatmap);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19
+}).addTo(heatmap);
 
 const points = [];
 
-fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:plan_app_ww_clean&outputFormat=application/json")
+// Fetch Planning Applications first
+fetch("plan_app_ww_clean.geojson")
   .then(res => res.json())
   .then(planData => {
     planData.features.forEach(f => {
@@ -268,7 +312,8 @@ fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=Get
       }
     });
 
-    fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=GetFeature&typeName=wicklow_land_cover:large_dev_ww&outputFormat=application/json")
+    // Now Fetch Large Developments
+    fetch("large_dev_ww.geojson")
       .then(res => res.json())
       .then(devData => {
         devData.features.forEach(f => {
@@ -277,6 +322,7 @@ fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=Get
           }
         });
 
+        // Now Create the Heat Layer
         L.heatLayer(points, {
           radius: 20,
           blur: 15,
@@ -285,6 +331,7 @@ fetch("http://localhost:8080/geoserver/wfs?service=WFS&version=1.0.0&request=Get
         }).addTo(heatmap);
       });
   });
+
 
 });
 </script>
