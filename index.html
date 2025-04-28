@@ -173,30 +173,82 @@
 <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
+<script>
 document.addEventListener('DOMContentLoaded', function() { 
-  
+
+  // === Map 1: Full County Map ===
   const map = L.map('map').setView([52.97, -6.35], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
 
-  const zoningLayer = L.geoJSON(null, { style: { color: "#6666ff", weight: 1, fillOpacity: 0.2 } }).addTo(map);
-  const planAppLayer = L.geoJSON(null, {}).addTo(map);
+  const zoningLayer = L.geoJSON(null, {
+    style: function(feature) {
+      const zone = (feature.properties.zone_type || '').toLowerCase();
+      if (zone.includes('residential')) return { color: '#FF0000', fillOpacity: 0.3 };
+      if (zone.includes('agricultural')) return { color: '#00FF00', fillOpacity: 0.3 };
+      if (zone.includes('industrial')) return { color: '#0000FF', fillOpacity: 0.3 };
+      return { color: '#666666', fillOpacity: 0.2 }; // Default
+    }
+  }).addTo(map);
 
-  const wicklowMap = L.map('wicklowMap').setView([52.985, -6.05], 14);
-  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 }).addTo(wicklowMap);
-  const wicklowLayer = L.geoJSON(null, {}).addTo(wicklowMap);
+  const planAppLayer = L.geoJSON(null, {
+    pointToLayer: function (feature, latlng) {
+      const status = (feature.properties.application_status || "").toUpperCase();
+      let color = "#666666";
+      if (status.includes("FINALISED")) color = "#9E9E9E";
+      else if (status.includes("APPEALED FINANCIAL")) color = "#E53935";
+      else if (status.includes("APPEALED")) color = "#FF9800";
+      else if (status.includes("NEW APPLICATION")) color = "#2196F3";
+      else if (status.includes("DECISION MADE")) color = "#4CAF50";
 
+      return L.circleMarker(latlng, {
+        radius: 5,
+        fillColor: color,
+        color: "#000",
+        weight: 0.8,
+        opacity: 1,
+        fillOpacity: 0.85
+      });
+    },
+    onEachFeature: function (feature, layer) {
+      layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>
+                       ${feature.properties.development_address || "No address"}<br>
+                       <em>${feature.properties.application_status || "Status unknown"}</em>`);
+    }
+  }).addTo(map);
+
+  // === Map 2: Greystones/Delgany Focus Map ===
+  const focusMap = L.map('wicklowMap').setView([53.14, -6.07], 14);
+  L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 18 }).addTo(focusMap);
+
+  const focusLayer = L.geoJSON(null, {
+    pointToLayer: function (feature, latlng) {
+      return L.circleMarker(latlng, {
+        radius: 5,
+        fillColor: "#00BFFF",
+        color: "#000",
+        weight: 0.8,
+        opacity: 1,
+        fillOpacity: 0.85
+      });
+    },
+    onEachFeature: function (feature, layer) {
+      layer.bindPopup(`<strong>${feature.properties.development_description || "No description"}</strong><br>
+                       ${feature.properties.development_address || "No address"}<br>
+                       <em>${feature.properties.application_status || "Status unknown"}</em>`);
+    }
+  }).addTo(focusMap);
+
+  // === Map 3: County Heatmap ===
   const heatmap = L.map('heatmap').setView([52.97, -6.35], 10);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(heatmap);
+  const heatPoints = [];
 
-  const points = [];
-
-  // Fetch zoning once
+  // === Fetch Data ===
   fetch('data/zoning_wicklow_reprojected.json')
     .then(res => res.json())
     .then(data => zoningLayer.addData(data))
     .catch(err => console.error('Error loading zoning layer:', err));
 
-  // Load plan applications first
   fetch('data/plan_app_ww_clean.json')
     .then(res => res.json())
     .then(planData => {
@@ -204,39 +256,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const filtered = planData.features.filter(f => {
         const address = (f.properties.development_address || "").toUpperCase();
-        return address.includes("WICKLOW") || address.includes("RATHNEW");
+        return address.includes("GREYSTONES") || address.includes("DELGANY");
       });
-      wicklowLayer.addData({ type: "FeatureCollection", features: filtered });
+      focusLayer.addData({ type: "FeatureCollection", features: filtered });
 
       planData.features.forEach(f => {
         if (f.geometry && f.geometry.coordinates) {
-          points.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+          heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
         }
       });
 
-      // After plan apps load, load large developments
       return fetch('data/large_dev_ww.json');
     })
     .then(res => res.json())
     .then(devData => {
       devData.features.forEach(f => {
         if (f.geometry && f.geometry.coordinates) {
-          points.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+          heatPoints.push([f.geometry.coordinates[1], f.geometry.coordinates[0]]);
+          focusLayer.addData(f); // Also add large devs into focus map
         }
       });
 
-      // NOW that everything is loaded, create the heatmap
-      L.heatLayer(points, {
+      // Add Heat Layer
+      L.heatLayer(heatPoints, {
         radius: 20,
         blur: 15,
         maxZoom: 17,
         gradient: { 0.4: 'blue', 0.65: 'lime', 1: 'red' }
       }).addTo(heatmap);
     })
-    .catch(err => console.error('Error loading data:', err));
+    .catch(err => console.error('Error loading development data:', err));
+
+  // === Add Full Legend ===
+  const legend = L.control({ position: "bottomright" });
+  legend.onAdd = function(map) {
+    const div = L.DomUtil.create("div", "info legend");
+    div.innerHTML += "<strong>Application Status</strong><br>";
+    div.innerHTML += '<i style="background: #9E9E9E"></i> Finalised<br>';
+    div.innerHTML += '<i style="background: #E53935"></i> Appealed Financial<br>';
+    div.innerHTML += '<i style="background: #FF9800"></i> Appealed<br>';
+    div.innerHTML += '<i style="background: #2196F3"></i> New Application<br>';
+    div.innerHTML += '<i style="background: #4CAF50"></i> Decision Made<br>';
+    div.innerHTML += "<hr><strong>Zoning</strong><br>";
+    div.innerHTML += '<i style="background: #FF0000"></i> Residential<br>';
+    div.innerHTML += '<i style="background: #00FF00"></i> Agricultural<br>';
+    div.innerHTML += '<i style="background: #0000FF"></i> Industrial<br>';
+    div.innerHTML += '<i style="background: #666666"></i> Other/Unknown<br>';
+    return div;
+  };
+  legend.addTo(map);
 
 });
 </script>
+
 
 </body>
 </html>
